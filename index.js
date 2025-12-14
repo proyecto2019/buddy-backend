@@ -57,30 +57,31 @@ Pregunta:
 `;
 
   try {
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
+   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+    "Content-Type": "application/json",
+    "HTTP-Referer": "https://buddy-backend-ixr8.onrender.com",
+    "X-Title": "Buddy Retrieval Practice"
+  },
+  body: JSON.stringify({
+    model: "meta-llama/llama-3.1-8b-instruct:free",
+    messages: [
       {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "moonshotai/kimi-k2:free",
-          messages: [
-            {
-              role: "system",
-              content:
-                "Eres un profesor universitario experto en aprendizaje activo y práctica de recuperación.",
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-        }),
-      }
-    );
+        role: "system",
+        content:
+          "Eres un profesor universitario experto en aprendizaje activo y práctica de recuperación.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 120
+  }),
+});
 
     const rawResponse = await response.text();
 
