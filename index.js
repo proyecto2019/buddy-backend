@@ -1,65 +1,118 @@
 const express = require("express");
 const cors = require("cors");
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 const app = express();
+
+/* =========================
+   MIDDLEWARE
+========================= */
 app.use(cors());
 app.use(express.json());
 
+/* =========================
+   CONFIG
+========================= */
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+/* =========================
+   ENDPOINTS
+========================= */
+
+// Ping para comprobar que el backend está activo
+app.get("/ping", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Buddy backend activo",
+  });
+});
+
+// Generar pregunta (retrieval practice)
 app.post("/generate-question", async (req, res) => {
   const { text } = req.body;
 
+  // Validación básica
   if (!text) {
-    return res.status(400).json({ error: "No text provided" });
+    return res.status(400).json({
+      error: "No text provided",
+    });
   }
 
-  const prompt = `Genera una sola pregunta desafiante y concreta para un estudiante universitario basada en el siguiente texto:\n\n${text.slice(0, 1000)}\n\nPregunta:`;
+  if (!OPENROUTER_API_KEY) {
+    return res.status(500).json({
+      error: "OPENROUTER_API_KEY no está configurada en el servidor",
+    });
+  }
+
+  const prompt = `
+Genera UNA sola pregunta clara, concreta y desafiante para un estudiante universitario,
+basada exclusivamente en el siguiente texto.
+La pregunta debe fomentar la reflexión y la recuperación activa de la información.
+
+Texto:
+${text.slice(0, 1000)}
+
+Pregunta:
+`;
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "moonshotai/kimi-k2:free",
-        messages: [
-          {
-            role: "system",
-            content: "Eres un profesor universitario que formula preguntas desafiantes basadas en textos para ayudar a los estudiantes a estudiar activamente."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
-      })
-    });
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "moonshotai/kimi-k2:free",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Eres un profesor universitario experto en aprendizaje activo y práctica de recuperación.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
+      }
+    );
 
-    const text = await response.text();
+    const rawResponse = await response.text();
+
     let data;
     try {
-      data = JSON.parse(text);
-    } catch (err) {
-      return res.status(500).json({ error: "Respuesta no válida desde el modelo." });
+      data = JSON.parse(rawResponse);
+    } catch (parseError) {
+      return res.status(500).json({
+        error: "La respuesta del modelo no es JSON válido",
+        rawResponse,
+      });
     }
 
-    const question = data?.choices?.[0]?.message?.content || "No se pudo generar la pregunta.";
+    const question =
+      data?.choices?.[0]?.message?.content ||
+      "No se pudo generar la pregunta.";
+
     res.json({ question });
 
-  } catch (err) {
-    res.status(500).json({ error: "Error generando la pregunta" });
+  } catch (error) {
+    res.status(500).json({
+      error: "Error generando la pregunta",
+      details: String(error),
+    });
   }
 });
 
-app.get("/ping", (_, res) => {
-  res.json({ status: "ok", message: "Buddy backend activo" });
-});
-
+/* =========================
+   SERVER
+========================= */
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log("Servidor Buddy escuchando en puerto " + PORT);
+  console.log(`Servidor Buddy escuchando en puerto ${PORT}`);
 });
