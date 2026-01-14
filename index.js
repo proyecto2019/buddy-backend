@@ -94,7 +94,7 @@ Pregunta:
           "X-Title": "Buddy Retrieval Practice",
         },
         body: JSON.stringify({
-          model: "meta-llama/llama-3.1-8b-instruct:free",
+          model: "openai/gpt-4o-mini",
           messages: [
             {
               role: "system",
