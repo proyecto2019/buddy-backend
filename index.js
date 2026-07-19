@@ -70,15 +70,25 @@ app.post("/generate-question", async (req, res) => {
   console.log("🧠 LONGITUD TEXTO:", textForModel.length);
 
   const prompt = `
-Genera UNA sola pregunta clara, concreta y desafiante para un estudiante universitario,
-basada exclusivamente en el siguiente texto.
-La pregunta debe fomentar la reflexión y la recuperación activa de la información.
-No incluyas la respuesta. No incluyas listas. Solo una pregunta.
+Read the following text carefully.
 
-Texto:
+First, identify the language of the selected text.
+
+Generate ONE clear, specific, and challenging question for a university student based exclusively on the selected text.
+
+Requirements:
+- The question MUST be written in exactly the same language as the selected text.
+- Never translate the selected text.
+- Never translate the generated question.
+- The question should promote reflection and retrieval practice.
+- Do not include the answer.
+- Do not include lists.
+- Return only one question.
+
+Selected text:
 ${textForModel}
 
-Pregunta:
+Question:
 `.trim();
 
   try {
@@ -96,11 +106,11 @@ Pregunta:
         body: JSON.stringify({
           model: "openai/gpt-4o-mini",
           messages: [
-            {
-              role: "system",
-              content:
-                "Eres un profesor universitario experto en aprendizaje activo y práctica de recuperación.",
-            },
+           {
+  role: "system",
+  content:
+    "You are a university professor specialized in active learning and retrieval practice. Detect the language of the selected text and always generate the question in exactly the same language. Never translate the selected text or the generated question.",
+},
             {
               role: "user",
               content: prompt,
